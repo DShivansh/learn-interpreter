@@ -2,6 +2,7 @@
   (:require [clojure.java.io :as io]))
 
 (def data-file (io/resource "input.lox"))
+(def input (slurp data-file))
 
 (def tokens {"(" 'LEFT_PAREN
              ")" 'RIGHT_PAREN
@@ -20,40 +21,44 @@
              ">=" 'GREATER_EQUAL
              "/" 'SLASH
              "\"" 'OPENING_QUOTE
-             "and" 'AND
-             "class" 'CLASS
-             "else" 'ELSE
-             "false" 'FALSE
-             "for" 'FOR
-             "fun" 'FUN
-             "if" 'IF
-             "nil" 'NIL
-             "or" 'OR
-             "print" 'PRINT
-             "return" 'RETURN
-             "super" 'SUPER
-             "this" 'THIS
-             "true" 'TRUE
-             "var" 'VAR
-             "while" 'WHILE
              })
 
-(def input (slurp data-file))
+(def keywords {
+               "and" 'AND
+               "class" 'CLASS
+               "else" 'ELSE
+               "false" 'FALSE
+               "for" 'FOR
+               "fun" 'FUN
+               "if" 'IF
+               "nil" 'NIL
+               "or" 'OR
+               "print" 'PRINT
+               "return" 'RETURN
+               "super" 'SUPER
+               "this" 'THIS
+               "true" 'TRUE
+               "var" 'VAR
+               "while" 'WHILE
+               })
 
-
-(defn move-forward-till
-  "move-forward-till function will move till max-iteration or till the token
-   is find in mp"
-  [input max-iteration mp]
-  (loop ))
+(defn split-at-whitespace [input]
+  (loop [[first & second] input ans ""]
+    (cond
+      (= first \space) [ans (apply str second)]
+      :else (recur second (str ans first)))))
 
 (defn move [input]
   (loop [[first second & rest] input ans []]
     (cond
+      (= first \space) (recur second ans)
       (nil? first) ans
       (nil? second) (conj ans first)
       (contains? tokens (str first second)) (recur rest (conj ans (str first second)))
-      (contains? tokens (str first)) (recur (str second rest) (conj ans (str first)))
-      (Character/isLetter first (recur (move-forward-till (str first second rest) 5 tokens))))))
-
+      (contains? tokens (str first)) (recur (str second (apply str rest)) (conj ans (str first)))
+      (Character/isLetterOrDigit first) (let [[token left] (split-at-whitespace (str first second (apply str rest)))]
+                                          (recur left (conj ans token)))
+      )
+    )
+  )
 
