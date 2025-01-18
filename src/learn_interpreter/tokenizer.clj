@@ -1,5 +1,6 @@
 (ns learn-interpreter.tokenizer
-  (:require [clojure.java.io :as io]))
+  (:require [clojure.java.io :as io]
+            [clojure.string :as str]))
 
 (def data-file (io/resource "input.lox"))
 (def input (slurp data-file))
@@ -10,10 +11,12 @@
              "}" 'RIGHT_BRACE
              "," 'COMMA
              "." 'DOT
+             "+" 'PLUS
              "-" 'MINUS
              ";" 'SEMI_COLON
              "*" 'STAR
              "!" 'BANG
+             "=" 'EQUAL
              "!=" 'BANG_EQUAL
              "<" 'LESS
              "<=" 'LESS_EQUAL
@@ -42,18 +45,21 @@
                "while" 'WHILE
                })
 
+(def does-not-matter #{\newline \space})
+
+
 (defn split-at-whitespace [input]
   (loop [[first & second] input ans ""]
     (cond
-      (= first \space) [ans (apply str second)]
+      (or (contains? does-not-matter first) (contains? tokens (str first))) [ans (apply str first second)]
       :else (recur second (str ans first)))))
 
 (defn move [input]
   (loop [[first second & rest] input ans []]
     (cond
-      (= first \space) (recur second ans)
+      (contains? does-not-matter first) (recur (str second (apply str rest)) ans)
       (nil? first) ans
-      (nil? second) (conj ans first)
+      (nil? second) (conj ans (str first))
       (contains? tokens (str first second)) (recur rest (conj ans (str first second)))
       (contains? tokens (str first)) (recur (str second (apply str rest)) (conj ans (str first)))
       (Character/isLetterOrDigit first) (let [[token left] (split-at-whitespace (str first second (apply str rest)))]
@@ -61,4 +67,8 @@
       )
     )
   )
+
+
+(move input)
+
 

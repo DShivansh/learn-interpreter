@@ -1,3 +1,4 @@
 fun test(a, b) {
+    a = "honey";
     return a+b;
 }
