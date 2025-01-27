@@ -5,8 +5,6 @@
 
 (def data-file (io/resource "input.lox"))
 (def input (slurp data-file))
-(println "#####################")
-(print input)
 
 (defrecord Token [Type Literal])
 
@@ -81,12 +79,7 @@
       (nil? rest) (concat ans token)
       :else (recur rest (concat ans token))))))
 
-(println input)
-
-(pp/pprint (get-token input))
-(print (get-token input))
-(println "###############")
-(pp/pprint (get-token input))
+;; (pp/pprint (get-token input))
 
 
 
