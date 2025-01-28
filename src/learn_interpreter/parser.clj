@@ -8,12 +8,13 @@
 (defn parse-let-statement
   "This function will take the tokens and parse the let statement"
   [tokens]
+  (println (str "tokens from the parse-let-statements" tokens))
   (let [lett-token (first tokens) identifier-token (second tokens)
-        assign-token (nth 2 tokens) tokens tokens]
+        assign-token (nth tokens 2) tokens tokens]
     (cond
       (not= (.Type identifier-token) 'IDENT) nil
       (not= (.Type assign-token) 'ASSIGN) nil
-      :else (let [tokens-to-return (next (drop-while #(not= % 'SEMICOLON) tokens))]
+      :else (let [tokens-to-return (next (drop-while #(not= (.Type %) 'SEMICOLON) tokens))]
               [tokens-to-return (LetStatement. 'LET (Identifier. (.Type identifier-token) (.Literal identifier-token)) nil)]))))
 
 (defn parse-statements
@@ -36,8 +37,8 @@
 
 (start "let a = 5;")
 
-
 (def a (tokenizer/get-token "let a = 5;"))
+(parse-statements a)
 (.Type (first a))
 
 
