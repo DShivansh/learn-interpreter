@@ -1,20 +1,35 @@
 (ns learn-interpreter.parser
   (:require [learn-interpreter.ast :as ast]
             [learn-interpreter.tokenizer :as tokenizer])
-  (:import [learn_interpreter.ast LetStatement Identifier]
+  (:import [learn_interpreter.ast LetStatement Identifier ReturnStatement]
            [learn_interpreter.tokenizer Token]))
 
+(defn drop-till-semi-colon [tokens]
+  (next (drop-while #(not= (.Type %) 'SEMICOLON) tokens)))
+
+(defn parse-return-statement
+  "This function will parse the return statement
+  the structure of the `return` statement looks like This
+  return <EXPRESSION>
+  "
+  [tokens]
+  (let [return-token (first tokens) tokens tokens tokens-to-return (drop-till-semi-colon tokens)]
+    (cond
+      (not= (.Type return-token) 'RETURN) (throw (Exception. "first token of the return statement should be return"))
+      :else [tokens-to-return (ReturnStatement. 'RETURN nil)])))
 
 (defn parse-let-statement
-  "This function will take the tokens and parse the let statement"
+  "This function will take the tokens and parse the let statement
+  the structure of `let` statement looks Like
+  let <IDENTIFIER> = <EXPRESSION>
+  "
   [tokens]
-  (println (str "tokens from the parse-let-statements" tokens))
   (let [lett-token (first tokens) identifier-token (second tokens)
         assign-token (nth tokens 2) tokens tokens]
     (cond
-      (not= (.Type identifier-token) 'IDENT) nil
-      (not= (.Type assign-token) 'ASSIGN) nil
-      :else (let [tokens-to-return (next (drop-while #(not= (.Type %) 'SEMICOLON) tokens))]
+      (not= (.Type identifier-token) 'IDENT) (throw (Exception. "after let statement there should be an identifier"))
+      (not= (.Type assign-token) 'ASSIGN) (throw (Exception. "after the let statement and identifier we should have = sign"))
+      :else (let [tokens-to-return (drop-till-semi-colon tokens)]
               [tokens-to-return (LetStatement. 'LET (Identifier. (.Type identifier-token) (.Literal identifier-token)) nil)]))))
 
 (defn parse-statements
@@ -23,6 +38,7 @@
   [tokens]
   (cond
     (= (.Type (first tokens)) 'LET) (parse-let-statement tokens)
+    (= (.Type (first tokens)) 'RETURN) (parse-return-statement tokens)
     :else nil))
 
 (defn start
@@ -35,10 +51,13 @@
         :else (let [[left-tokens statement-formed] (parse-statements tokens)]
                 (recur left-tokens (conj statements statement-formed)))))))
 
-(start "let a = 5;")
 
-(def a (tokenizer/get-token "let a = 5;"))
-(parse-statements a)
-(.Type (first a))
+(start "let a = 5;
+let b = 10;
+let c = 23;")
+
+(start "return 5;
+return 23;
+return 34;")
 
 
