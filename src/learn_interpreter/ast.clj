@@ -5,5 +5,5 @@
 (defrecord Identifier [Token Value])
 (defrecord LetStatement [Token Name Value])
 (defrecord ReturnStatement [Token ReturnValue])
-
+(defrecord ExpressionStatement [Token Expression])
 
