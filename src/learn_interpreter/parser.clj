@@ -1,13 +1,14 @@
 (ns learn-interpreter.parser
   (:require [learn-interpreter.ast :as ast]
             [learn-interpreter.tokenizer :as tokenizer])
-  (:import [learn_interpreter.ast LetStatement Identifier ReturnStatement ExpressionStatement]
+  (:import [learn_interpreter.ast LetStatement Identifier ReturnStatement
+            ExpressionStatement IntegerLiteral PrefixExpression InfixExpression]
            [learn_interpreter.tokenizer Token]))
 
-(defn parse-identifier [[first & rest]]
-  [rest (Identifier. (.Type first) (.Literal first))])
+(declare parse-expression)
 
 (def precedence-map {
+                 'IOTA -1
                  'LOWEST 1
                  'EQUALS 2
                  'LESSGREATER 3
@@ -15,11 +16,50 @@
                  'PRODUCT 5
                  'PREFIX 6
                  'CALL 7
-                 })
+                     })
+
+(def precedences {
+                  'EQ (get precedence-map 'EQUALS)
+                  'NOT_EQ (get precedence-map 'EQUALS)
+                  'LT (get precedence-map 'LESSGREATER)
+                  'GT (get precedence-map 'LESSGREATER)
+                  'PLUS (get precedence-map 'SUM)
+                  'SLASH (get precedence-map 'PRODUCT)
+                  'ASTERISK (get precedence-map 'PRODUCT)
+                  })
+
+(defn get-precedence [token-type]
+  (get precedences token-type (get precedence-map 'LOWEST)))
+
+(defn parse-identifier [[first & rest]]
+  [rest (Identifier. (.Type first) (.Literal first))])
+
+(defn parse-integer-literal [[first & rest]]
+  [rest (IntegerLiteral. (.Type first) (Integer/parseInt (.Literal first)))])
+
+(defn parse-prefix-expression [[first & rest]]
+  (let [[rest-from-parse-expression parsed-expression] (parse-expression rest 'PREFIX)]
+    [rest-from-parse-expression (PrefixExpression. (.Type first) (.Literal first) parsed-expression)]))
+
 
 (def functions-associated-with-tokens {
                                        'IDENT parse-identifier
+                                       'INT parse-integer-literal
+                                       'BANG parse-prefix-expression
+                                       'MINUS parse-prefix-expression
                                        })
+
+(def infix-functions-associated-with-tokens {
+                                             'PLUS  parse-infix-expression
+                                             'MINUS parse-infix-expression
+                                             'SLASH parse-infix-expression
+                                             'ASTERISK parse-infix-expression
+                                             'EQ parse-infix-expression
+                                             'NOT_EQ parse-infix-expression
+                                             'LT parse-infix-expression
+                                             'GT parse-infix-expression
+                                             })
+
 
 (defn parse-expression [tokens precedence]
   (let [[first & rest] tokens func (functions-associated-with-tokens (.Type first))]
@@ -87,7 +127,10 @@
 
 
 
-(start "foobar;")
+;; (start "foobar;")
+;; (tokenizer/get-token "5;")
+;; (start "-5;")
+(start "-5;")
 
 ;; (start "let a = 5;
 ;; let b = 10;

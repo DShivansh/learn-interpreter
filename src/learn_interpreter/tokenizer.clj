@@ -13,7 +13,7 @@
              "+" 'PLUS
              "-" 'MINUS
              "!" 'BANG
-             "*" 'ASTRISK
+             "*" 'ASTERISK
              "/" 'SLASH
              "<" 'LT
              ">" 'GT
