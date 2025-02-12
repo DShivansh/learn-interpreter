@@ -60,12 +60,19 @@
                                              'GT parse-infix-expression
                                              })
 
+(defn parse-infix-helper [tokens precedence left-exp]
+  (loop [[first-t & rest] tokens] precedence-value (get-precedence (.Type (first rest) infix-expression (InfixExpression. nil left-exp nil nil)))
+        (cond
+          (> precedence-value precedence) [rest infix-expression]
+          (= 'SEMICOLON (.Type (first rest))) [rest infix-expression]
+          :else (let [infix-func (get infix-functions-associated-with-tokens (.Type first-t)) ]))))
 
 (defn parse-expression [tokens precedence]
   (let [[first & rest] tokens func (functions-associated-with-tokens (.Type first))]
     (cond
       (nil? func) (throw (Exception. "Cannot parse expression in parse-expression function"))
-      :else (func tokens))))
+      :else (let [left-exp (func tokens)]
+              ))))
 
 (defn drop-till-semi-colon [tokens]
   (next (drop-while #(not= (.Type %) 'SEMICOLON) tokens)))
