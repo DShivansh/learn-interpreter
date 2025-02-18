@@ -43,15 +43,22 @@
 (defn parse-prefix-expression [[first & rest]]
   ;; (println)
   ;; (println (str " parsing prefix expression first is " first " rest is " rest))
+      (println "~~~~~~~~~~~~*********~~~~~~~~")
+    (println "calling parse-expression from parse-prefix-expression")
+    (println)
   (let [[rest-from-parse-expression parsed-expression] (parse-expression rest 'PREFIX)]
+
     [rest-from-parse-expression (PrefixExpression. (.Type first) (.Literal first) parsed-expression)]))
 
 (defn parse-infix-expression [[first-token & rest-tokens] left-ast-expression]
-  (let [precedence (get-precedence (.Type first-token))]
+  (println)
+      (println "calling parse-expression from parse-infix-expression")
+  (let [precedence (get-precedence (.Type first-token)) [left-tokens right-ast-expression] (parse-expression rest-tokens precedence)]
     (println)
-    (println "*************************************")
-    (println " first-token is " first-token " parse-infix-expression " rest-tokens)
-    [rest-tokens (InfixExpression. (.Type first-token) left-ast-expression (.Literal first-token) (parse-expression (vec rest-tokens) precedence))]))
+    (println "parse-infix-expression"  " first-token is " first-token " parse-infix-expression " rest-tokens)
+    (println)
+
+    [left-tokens (InfixExpression. (.Type first-token) left-ast-expression (.Literal first-token) right-ast-expression)]))
 
 
 (def functions-associated-with-tokens {
@@ -73,27 +80,27 @@
                                              })
 
 (defn parse-infix-expression-helper [tokens left-exp precedence]
-  (loop [[first-token & rest-tokens] tokens left-exp left-exp]
-    ;; (println)
-    ;; (println " parsing expression helper first is " first-token " rest is " rest-tokens)
-    ;; (println (str " first token is " (.Type first-token)))
+  (loop [[first-token & rest-tokens] tokens internal-tokens tokens left-exp left-exp]
+    (println)
+    (println " parsing expression helper first is " first-token " rest is " rest-tokens " tokens is " internal-tokens)
+    (println (str " first token is " (.Type first-token)))
 
     (cond
-      (= 'SEMICOLON (.Type first-token)) [rest-tokens left-exp]
+      (= 'SEMICOLON (.Type first-token)) [internal-tokens left-exp]
       (> precedence (get-precedence (.Type first-token))) (do
                                                             ;; (println)
                                                             ;; (println " inside precedence block ")
                                                             ;; (println " current-precedence " precedence " precedence-gotten " (get-precedence (.Type first-token)))
-                                                            [tokens left-exp])
+                                                            [internal-tokens left-exp])
       :else (let [infix-parse-function (get infix-functions-associated-with-tokens (.Type first-token))]
               ;; (println "")
               ;; (println " first token is " first-token " infix parse function is " infix-parse-function)
               (cond
-                (nil? infix-parse-function) [tokens left-exp]
-                :else (let [[left-tokens infix-expression] (infix-parse-function tokens left-exp)]
-                        ;; (println)
-                        ;; (println " got an infix function left tokens is " left-tokens " infix-expression is " infix-expression)
-                        (recur left-tokens infix-expression)))))))
+                (nil? infix-parse-function) [internal-tokens left-exp]
+                :else (let [[left-tokens infix-expression] (infix-parse-function internal-tokens left-exp)]
+                        (println)
+                        (println " got an infix function left tokens is " left-tokens " infix-expression is " infix-expression)
+                        (recur left-tokens left-tokens infix-expression)))))))
 
 
 (defn parse-expression [tokens precedence]
@@ -105,8 +112,8 @@
     (cond
       (nil? func) (throw (Exception. "Cannot parse expression in parse-expression function"))
       :else (let [[left-tokens left-exp] (func tokens)]
-              ;; (println)
-              ;; (println " parse-expression tokens are " left-tokens)
+              (println)
+              (println " parse-expression left tokens are " left-tokens)
               (parse-infix-expression-helper left-tokens left-exp precedence)))))
 
 ;; (defn parse-expression [tokens precedence]
@@ -151,11 +158,11 @@
 
 (defn parse-expression-statement
   [tokens]
-  ;; (println)
-  ;;     (println "parse-expression-statement called")
+  (println)
+      (println " calling parse expression from parse-expression-statement")
   (let [[left-tokens output] (parse-expression tokens (get precedence-map 'LOWEST)) ans (ExpressionStatement. (:Token output) output)]
-    ;; (println)
-    ;; (println " parse expression statement output is " output " token is " (:Token output) " left-tokens are " left-tokens)
+    (println)
+    (println " parse expression statement output is " output " token is " (:Token output) " left-tokens are " left-tokens)
     (cond
       ;; (nil? left-tokens) [nil ans]
       (= (.Type (first left-tokens)) 'SEMICOLON) [(rest left-tokens) ans]
@@ -202,8 +209,8 @@
 ;; (p/pprint (start "5 + 5;"))
 ;; (print (start "5 + 5;"))
 
-(println "**************************")
-(start "5 + 5;")
+;; (println "**************************")
+;; (start "5 + 5;")
 
 
 
