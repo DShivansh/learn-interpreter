@@ -46,8 +46,9 @@
       (println "~~~~~~~~~~~~*********~~~~~~~~")
     (println "calling parse-expression from parse-prefix-expression")
     (println)
-  (let [[rest-from-parse-expression parsed-expression] (parse-expression rest 'PREFIX)]
-
+  (let [[rest-from-parse-expression parsed-expression] (parse-expression rest 6)]
+    (println)
+    (println " prefix expression after the parse expression is called ")
     [rest-from-parse-expression (PrefixExpression. (.Type first) (.Literal first) parsed-expression)]))
 
 (defn parse-infix-expression [[first-token & rest-tokens] left-ast-expression]
@@ -83,7 +84,7 @@
   (loop [[first-token & rest-tokens] tokens internal-tokens tokens left-exp left-exp]
     (println)
     (println " parsing expression helper first is " first-token " rest is " rest-tokens " tokens is " internal-tokens)
-    (println (str " first token is " (.Type first-token)))
+    (println " first token is " (.Type first-token) " precedence passed is " precedence " precedence got is " (get-precedence (.Type first-token)))
 
     (cond
       (= 'SEMICOLON (.Type first-token)) [internal-tokens left-exp]
@@ -113,7 +114,7 @@
       (nil? func) (throw (Exception. "Cannot parse expression in parse-expression function"))
       :else (let [[left-tokens left-exp] (func tokens)]
               (println)
-              (println " parse-expression left tokens are " left-tokens)
+              (println " parse-expression left tokens are " left-tokens " left expression is " left-exp)
               (parse-infix-expression-helper left-tokens left-exp precedence)))))
 
 ;; (defn parse-expression [tokens precedence]
@@ -213,7 +214,9 @@
 ;; (start "5 + 5;")
 
 
-
+;; (start "a + b * c;")
+;; (start "3 + 4; -5 * 5;")
+(start "-5 * 5;")
 
 ;; (start "let a = 5;
 ;; let b = 10;
