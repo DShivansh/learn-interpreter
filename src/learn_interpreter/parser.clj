@@ -88,7 +88,7 @@
 
     (cond
       (= 'SEMICOLON (.Type first-token)) [internal-tokens left-exp]
-      (> precedence (get-precedence (.Type first-token))) (do
+      (> precedence (get-precedence (.Type (first rest-tokens)))) (do
                                                             ;; (println)
                                                             ;; (println " inside precedence block ")
                                                             ;; (println " current-precedence " precedence " precedence-gotten " (get-precedence (.Type first-token)))
@@ -216,7 +216,7 @@
 
 ;; (start "a + b * c;")
 ;; (start "3 + 4; -5 * 5;")
-(start "-5 * 5;")
+;; (start "-5 * 5;")
 
 ;; (start "let a = 5;
 ;; let b = 10;
