@@ -3,7 +3,7 @@
             [learn-interpreter.tokenizer :as tokenizer]
             [clojure.pprint :as p])
   (:import [learn_interpreter.ast LetStatement Identifier ReturnStatement
-            ExpressionStatement IntegerLiteral PrefixExpression InfixExpression]
+            ExpressionStatement IntegerLiteral PrefixExpression InfixExpression BooleanExpression]
            [learn_interpreter.tokenizer Token]))
 
 (declare parse-expression)
@@ -61,12 +61,23 @@
 
     [left-tokens (InfixExpression. (.Type first-token) left-ast-expression (.Literal first-token) right-ast-expression)]))
 
+(defn parse-boolean-expression [[first-token & rest-tokens]]
+  [rest-tokens (BooleanExpression. (.Type first-token) (= 'TRUE (.Type first-token)))])
+
+(defn parse-grouped-expression [[first-token & rest-tokens]]
+  (let [[[returned-first-token & returned-rest-tokens] exp] (parse-expression rest-tokens (get-precedence 'LOWEST))]
+    (cond
+      (not= (.Type returned-first-token) 'RPAREN) (throw (Exception. "Right param not found"))
+      :else [returned-rest-tokens exp])))
 
 (def functions-associated-with-tokens {
                                        'IDENT parse-identifier
                                        'INT parse-integer-literal
                                        'BANG parse-prefix-expression
                                        'MINUS parse-prefix-expression
+                                       'TRUE parse-boolean-expression
+                                       'FALSE parse-boolean-expression
+                                       'LPAREN parse-grouped-expression
                                        })
 
 (def infix-functions-associated-with-tokens {
@@ -226,5 +237,13 @@
 ;; return 23;
 ;; return 34;")
 
-
-
+;; (start "!-a;")
+;; (start "1 + 2 + 3;")
+;; (start "-1 + 2;")
+;; (start "true;")
+;; (start "3 > 5 == false;")
+;; (start "true == true;")
+;; (start "true != false;")
+;; (start "(5 + 5) * 2;")
+;; (start "1 + (2 + 3) + 4;")
+;; (start "-(5 + 5);")

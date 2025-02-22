@@ -9,4 +9,5 @@
 (defrecord IntegerLiteral [Token ^int Value])
 (defrecord PrefixExpression [Token Operator RightExpression])
 (defrecord InfixExpression [Token LeftExpression Operator RightExpression])
+(defrecord BooleanExpression [Token ^boolean Value])
 
