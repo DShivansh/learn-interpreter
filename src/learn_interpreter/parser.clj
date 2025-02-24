@@ -3,10 +3,11 @@
             [learn-interpreter.tokenizer :as tokenizer]
             [clojure.pprint :as p])
   (:import [learn_interpreter.ast LetStatement Identifier ReturnStatement
-            ExpressionStatement IntegerLiteral PrefixExpression InfixExpression BooleanExpression]
+            ExpressionStatement IntegerLiteral PrefixExpression InfixExpression BooleanExpression IfExpression BlockStatement]
            [learn_interpreter.tokenizer Token]))
 
 (declare parse-expression)
+(declare parse-statements)
 
 (def precedence-map {
                  'IOTA -1
@@ -70,6 +71,42 @@
       (not= (.Type returned-first-token) 'RPAREN) (throw (Exception. "Right param not found"))
       :else [returned-rest-tokens exp])))
 
+(defn parse-block-expression [[first-block-token & rest-block-tokens]]
+  (loop [[first-token & rest-tokens] rest-block-tokens statements [] rest-block-tokens rest-block-tokens]
+    (println)
+    (println " first block token is " first-block-token)
+    (println " inside parse-block-expression rest block tokens are " rest-block-tokens)
+    (println " first token is " first-token)
+    (println " rest-tokens are " rest-tokens)
+    (cond
+      (= (.Type first-token) 'RBRACE) (do
+                                        (println)
+                                        (println " inside the parse-block-expression ")
+                                        (println " rest-tokens are " rest-tokens)
+                                        (println " rest block tokens are " rest-block-tokens)
+                                        [rest-tokens (BlockStatement. (.Type first-block-token) statements)])
+      (= (.Type first-token) 'EOF) [rest-block-tokens (BlockStatement. (.Type first-block-token) statements)]
+      :else (let [[left-tokens-after-parsing-statements statements-got] (parse-statements rest-block-tokens)]
+              (recur left-tokens-after-parsing-statements (conj statements statements-got left-tokens-after-parsing-statements) left-tokens-after-parsing-statements)))))
+
+(defn parse-if-expression [[if-token & rest-tokens]]
+  (let [if-token if-token [left-paren & if-condition-expression] rest-tokens]
+    (println)
+    (println " parsing if expression ")
+    (println " if token is " if-token " left-paren " left-paren " if condition expression " if-condition-expression)
+    (cond
+      (not= (.Type left-paren) 'LPAREN) (throw (Exception. "left paren is necessary after the if keyword"))
+      :else (let [[[right-paren & rest-block-statements] if-condition-expression] (parse-expression if-condition-expression (get-precedence 'LOWEST)) left-brace (first rest-block-statements)]
+              (println)
+              (println " parse if expression function after parse expression condition expression is " if-condition-expression)
+              (println)
+              (println " right paren is " right-paren " rest block statements are " rest-block-statements)
+              (cond
+                (not= 'RPAREN (.Type right-paren)) (throw (Exception. "Right paren is missing in if condition which is necessary"))
+                (not= 'LBRACE (.Type left-brace)) (throw (Exception. "Left brace should be present after condition"))
+                :else (let [[left-tokens-after-parsing-block parse-block-expression] (parse-block-expression rest-block-statements)]
+                        [left-tokens-after-parsing-block (IfExpression. (.Type if-token) if-condition-expression parse-block-expression nil)]))))))
+
 (def functions-associated-with-tokens {
                                        'IDENT parse-identifier
                                        'INT parse-integer-literal
@@ -78,6 +115,7 @@
                                        'TRUE parse-boolean-expression
                                        'FALSE parse-boolean-expression
                                        'LPAREN parse-grouped-expression
+                                       'IF parse-if-expression
                                        })
 
 (def infix-functions-associated-with-tokens {
@@ -205,7 +243,6 @@
                 (recur left-tokens (conj statements statement-formed)))))))
 
 
-
 ;; (start "foobar;")
 ;; (tokenizer/get-token "5;")
 ;; (start "-5;")
@@ -247,3 +284,4 @@
 ;; (start "(5 + 5) * 2;")
 ;; (start "1 + (2 + 3) + 4;")
 ;; (start "-(5 + 5);")
+;; (start "if (x < y) { x }")

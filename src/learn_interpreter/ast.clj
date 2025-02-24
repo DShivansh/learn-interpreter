@@ -10,4 +10,9 @@
 (defrecord PrefixExpression [Token Operator RightExpression])
 (defrecord InfixExpression [Token LeftExpression Operator RightExpression])
 (defrecord BooleanExpression [Token ^boolean Value])
+(defrecord IfExpression [Token ;; here it will always be if
+                         Condition Consequence Alternative])
+(defrecord BlockStatement [Token ;; here this will be {
+                           Statements ;; these statements will be the list of statements inside braces
+                           ])
 
