@@ -87,7 +87,7 @@
                                         [rest-tokens (BlockStatement. (.Type first-block-token) statements)])
       (= (.Type first-token) 'EOF) [rest-block-tokens (BlockStatement. (.Type first-block-token) statements)]
       :else (let [[left-tokens-after-parsing-statements statements-got] (parse-statements rest-block-tokens)]
-              (recur left-tokens-after-parsing-statements (conj statements statements-got left-tokens-after-parsing-statements) left-tokens-after-parsing-statements)))))
+              (recur left-tokens-after-parsing-statements (conj statements statements-got) left-tokens-after-parsing-statements)))))
 
 (defn parse-if-expression [[if-token & rest-tokens]]
   (let [if-token if-token [left-paren & if-condition-expression] rest-tokens]
@@ -104,8 +104,14 @@
               (cond
                 (not= 'RPAREN (.Type right-paren)) (throw (Exception. "Right paren is missing in if condition which is necessary"))
                 (not= 'LBRACE (.Type left-brace)) (throw (Exception. "Left brace should be present after condition"))
-                :else (let [[left-tokens-after-parsing-block parse-block-expression] (parse-block-expression rest-block-statements)]
-                        [left-tokens-after-parsing-block (IfExpression. (.Type if-token) if-condition-expression parse-block-expression nil)]))))))
+                :else (let [[left-tokens-after-parsing-block parse-block-expressions] (parse-block-expression rest-block-statements)]
+                        (cond
+                          (= 'ELSE (.Type (first left-tokens-after-parsing-block))) (let [tokens-for-else (rest left-tokens-after-parsing-block)]
+                                                                                      (cond
+                                                                                        (not= 'LBRACE (.Type (first tokens-for-else))) (throw (Exception. "else block should start with left paren"))
+                                                                                        :else (let [[left-tokens-after-parsing-else-block parse-else-block-expression] (parse-block-expression tokens-for-else)]
+                                                                                                [left-tokens-after-parsing-else-block (IfExpression. (.Type if-token) if-condition-expression parse-block-expressions parse-else-block-expression)])))
+                          :else [left-tokens-after-parsing-block (IfExpression. (.Type if-token) if-condition-expression parse-block-expressions nil)])))))))
 
 (def functions-associated-with-tokens {
                                        'IDENT parse-identifier
@@ -136,6 +142,7 @@
     (println " first token is " (.Type first-token) " precedence passed is " precedence " precedence got is " (get-precedence (.Type first-token)))
 
     (cond
+      (= 'EOF (.Type first-token)) [internal-tokens left-exp]
       (= 'SEMICOLON (.Type first-token)) [internal-tokens left-exp]
       (> precedence (get-precedence (.Type (first rest-tokens)))) (do
                                                             ;; (println)
@@ -284,4 +291,6 @@
 ;; (start "(5 + 5) * 2;")
 ;; (start "1 + (2 + 3) + 4;")
 ;; (start "-(5 + 5);")
+;; (start "if (x < y) { return x; }")
 ;; (start "if (x < y) { x }")
+;; (start "if (x < y) { return x; } else { return y; }")
