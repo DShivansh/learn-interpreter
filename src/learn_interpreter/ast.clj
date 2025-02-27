@@ -15,4 +15,7 @@
 (defrecord BlockStatement [Token ;; here this will be {
                            Statements ;; these statements will be the list of statements inside braces
                            ])
+(defrecord FunctionLiteral [Token
+                            Parameters ;; This is the list of Identifier record
+                            BlockStatement]) ;; Here BlockStatement means the BlockStatement record
 

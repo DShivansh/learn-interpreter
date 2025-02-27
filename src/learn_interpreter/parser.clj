@@ -113,6 +113,14 @@
                                                                                                 [left-tokens-after-parsing-else-block (IfExpression. (.Type if-token) if-condition-expression parse-block-expressions parse-else-block-expression)])))
                           :else [left-tokens-after-parsing-block (IfExpression. (.Type if-token) if-condition-expression parse-block-expressions nil)])))))))
 
+(defn parse-function-literal [[function-token & rest-function-tokens]]
+  (cond
+    (not= 'LPAREN (first (.Type rest-function-tokens))) (throw (Exception. "function keyword must be followed by a left parenthesis which looks like '('"))
+    :else (let [[[first-token-after-parsing-function-parameters & tokens-left-after-parsing-function-parameters] parsed-parameters] (parse-function-parameters rest-function-tokens)]
+            (cond
+              (not= 'LBRACE (.Type first-token-after-parsing-function-parameters)) (throw (Exception. "left brace is required after function prameters"))
+              :else ))))
+
 (def functions-associated-with-tokens {
                                        'IDENT parse-identifier
                                        'INT parse-integer-literal
@@ -122,6 +130,7 @@
                                        'FALSE parse-boolean-expression
                                        'LPAREN parse-grouped-expression
                                        'IF parse-if-expression
+                                       'FUNCTION parse-function-literal
                                        })
 
 (def infix-functions-associated-with-tokens {
