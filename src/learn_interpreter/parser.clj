@@ -3,7 +3,7 @@
             [learn-interpreter.tokenizer :as tokenizer]
             [clojure.pprint :as p])
   (:import [learn_interpreter.ast LetStatement Identifier ReturnStatement
-            ExpressionStatement IntegerLiteral PrefixExpression InfixExpression BooleanExpression IfExpression BlockStatement]
+            ExpressionStatement IntegerLiteral PrefixExpression InfixExpression BooleanExpression IfExpression BlockStatement FunctionLiteral]
            [learn_interpreter.tokenizer Token]))
 
 (declare parse-expression)
@@ -113,13 +113,40 @@
                                                                                                 [left-tokens-after-parsing-else-block (IfExpression. (.Type if-token) if-condition-expression parse-block-expressions parse-else-block-expression)])))
                           :else [left-tokens-after-parsing-block (IfExpression. (.Type if-token) if-condition-expression parse-block-expressions nil)])))))))
 
+(defn parse-function-parameters-helper [parameters]
+  (println)
+  (println "parse-function-parameters-helper is called")
+  (println " parameters passed are " parameters)
+  (loop [[first-parameter & rest-parameters] parameters identifiers [] params parameters]
+    (cond
+      (= 'COMMA (.Type first-parameter)) (recur rest-parameters identifiers rest-parameters)
+      (= 'IDENT (.Type first-parameter)) (recur rest-parameters (conj identifiers (Identifier. (.Type first-parameter) (.Literal first-parameter))) rest-parameters)
+      :else [params identifiers])))
+
+
+(defn parse-function-parameters [parameters]
+  (let [identifiers []]
+    (println)
+    (println " parse function parameters first parameter is " (first parameters))
+    (println " rest parameters are " (rest parameters))
+    (println)
+    (cond
+      (= 'RPAREN (.Type (first parameters))) [(rest parameters) identifiers]
+      :else (let [[tokens-left parsed-identifiers] (parse-function-parameters-helper parameters)]
+              ()
+              (cond
+                (not= 'RPAREN (.Type (first tokens-left))) (throw (Exception. "function parameters must end with a right paran"))
+                :else [(rest tokens-left) parsed-identifiers])))))
+
+ 
 (defn parse-function-literal [[function-token & rest-function-tokens]]
   (cond
-    (not= 'LPAREN (first (.Type rest-function-tokens))) (throw (Exception. "function keyword must be followed by a left parenthesis which looks like '('"))
-    :else (let [[[first-token-after-parsing-function-parameters & tokens-left-after-parsing-function-parameters] parsed-parameters] (parse-function-parameters rest-function-tokens)]
+    (not= 'LPAREN (.Type (first rest-function-tokens))) (throw (Exception. "function keyword must be followed by a left parenthesis which looks like '('"))
+    :else (let [[tokens-left-after-parsing-function-parameters parsed-parameters] (parse-function-parameters (rest rest-function-tokens))]
             (cond
-              (not= 'LBRACE (.Type first-token-after-parsing-function-parameters)) (throw (Exception. "left brace is required after function prameters"))
-              :else ))))
+              (not= 'LBRACE (.Type (first tokens-left-after-parsing-function-parameters))) (throw (Exception. "left brace is required after function prameters"))
+              :else (let [[tokens-left-after-parsing-block parsed-block] (parse-block-expression tokens-left-after-parsing-function-parameters)]
+                      [tokens-left-after-parsing-block (FunctionLiteral. (.Type function-token) parsed-parameters parsed-block)])))))
 
 (def functions-associated-with-tokens {
                                        'IDENT parse-identifier
@@ -303,3 +330,7 @@
 ;; (start "if (x < y) { return x; }")
 ;; (start "if (x < y) { x }")
 ;; (start "if (x < y) { return x; } else { return y; }")
+;; (tokenizer/get-token "fn (x, y) {x + y;}")
+;; (start "fn (x, y, z) {x + y;}")
+;; (start "fn () {return 1;}")
+ 
