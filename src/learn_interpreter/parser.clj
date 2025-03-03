@@ -3,7 +3,7 @@
             [learn-interpreter.tokenizer :as tokenizer]
             [clojure.pprint :as p])
   (:import [learn_interpreter.ast LetStatement Identifier ReturnStatement
-            ExpressionStatement IntegerLiteral PrefixExpression InfixExpression BooleanExpression IfExpression BlockStatement FunctionLiteral]
+            ExpressionStatement IntegerLiteral PrefixExpression InfixExpression BooleanExpression IfExpression BlockStatement FunctionLiteral CallExpression]
            [learn_interpreter.tokenizer Token]))
 
 (declare parse-expression)
@@ -28,6 +28,7 @@
                   'PLUS (get precedence-map 'SUM)
                   'SLASH (get precedence-map 'PRODUCT)
                   'ASTERISK (get precedence-map 'PRODUCT)
+                  'LPAREN (get precedence-map 'CALL)
                   })
 
 (defn get-precedence [token-type]
@@ -133,7 +134,6 @@
     (cond
       (= 'RPAREN (.Type (first parameters))) [(rest parameters) identifiers]
       :else (let [[tokens-left parsed-identifiers] (parse-function-parameters-helper parameters)]
-              ()
               (cond
                 (not= 'RPAREN (.Type (first tokens-left))) (throw (Exception. "function parameters must end with a right paran"))
                 :else [(rest tokens-left) parsed-identifiers])))))
@@ -147,6 +147,40 @@
               (not= 'LBRACE (.Type (first tokens-left-after-parsing-function-parameters))) (throw (Exception. "left brace is required after function prameters"))
               :else (let [[tokens-left-after-parsing-block parsed-block] (parse-block-expression tokens-left-after-parsing-function-parameters)]
                       [tokens-left-after-parsing-block (FunctionLiteral. (.Type function-token) parsed-parameters parsed-block)])))))
+
+(defn parse-call-arguments-helper
+  "tokens will be like this <expression 1>, <expression 2> ..... <expression n>)"
+  [tokens]
+  (println)
+  (println "parse-call-arguments-helper")
+  (println " tokens are " tokens)
+  (loop [[first-token & rest-tokens] tokens arguments [] tokens1 tokens]
+    (cond
+      (= 'COMMA (.Type first-token)) (recur rest-tokens arguments rest-tokens)
+      (= 'COMMA (.Type (first rest-tokens))) (let [[left-tokens-after-parsing-expression parsed-expression] (parse-expression tokens1 (get-precedence 'LOWEST))]
+                                               (recur left-tokens-after-parsing-expression (conj arguments parsed-expression) left-tokens-after-parsing-expression))
+      :else [tokens1 arguments])))
+
+(defn parse-call-arguments [tokens]
+  (println)
+  (println "parse-call-arguments")
+  (println " first token is " (first tokens))
+  (println)
+  (println " rest-tokens are " (rest tokens))
+  (cond
+    (= (.Type (first tokens)) 'RPAREN) [(rest tokens) []]
+    :else (let [[left-tokens parsed-arguments] (parse-call-arguments-helper tokens)]
+            (println)
+            (println " tokens left after parsing arguments are " left-tokens)
+            (println)
+            (println " parsed arguments are " parsed-arguments)
+            (cond
+              (not= (.Type (first left-tokens)) 'RPAREN) (throw (Exception. "function call arguments must end with right paren"))
+              :else [(rest left-tokens) parsed-arguments]))))
+
+(defn parse-call-expression [[first-token & rest-tokens] function-expression]
+  (let [[tokens-left parsed-arguments] (parse-call-arguments rest-tokens)]
+        (CallExpression. (.Type first-token) function-expression parsed-arguments)))
 
 (def functions-associated-with-tokens {
                                        'IDENT parse-identifier
@@ -169,6 +203,7 @@
                                              'NOT_EQ parse-infix-expression
                                              'LT parse-infix-expression
                                              'GT parse-infix-expression
+                                             'LPAREN parse-call-expression
                                              })
 
 (defn parse-infix-expression-helper [tokens left-exp precedence]
@@ -334,3 +369,5 @@
 ;; (start "fn (x, y, z) {x + y;}")
 ;; (start "fn () {return 1;}")
  
+;; (start "add(1, 2*3, 4+5);")
+;; (tokenizer/get-token "add(1, 2*3, 4+5);")

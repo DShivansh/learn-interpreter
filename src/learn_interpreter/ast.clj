@@ -18,4 +18,8 @@
 (defrecord FunctionLiteral [Token
                             Parameters ;; This is the list of Identifier record
                             BlockStatement]) ;; Here BlockStatement means the BlockStatement record
+(defrecord CallExpression [Token ;; The '(' Token
+                           FunctionExpression ;; identifier or FunctionaLiteral
+                           Arguments ;; List of arguments
+                           ])
 
