@@ -157,9 +157,14 @@
   (loop [[first-token & rest-tokens] tokens arguments [] tokens1 tokens]
     (cond
       (= 'COMMA (.Type first-token)) (recur rest-tokens arguments rest-tokens)
-      (= 'COMMA (.Type (first rest-tokens))) (let [[left-tokens-after-parsing-expression parsed-expression] (parse-expression tokens1 (get-precedence 'LOWEST))]
-                                               (recur left-tokens-after-parsing-expression (conj arguments parsed-expression) left-tokens-after-parsing-expression))
-      :else [tokens1 arguments])))
+      :else (cond
+              (= 'RPAREN (.Type first-token)) [tokens1 arguments]
+              :else (let [[left-tokens-after-parsing-expression parsed-expression] (parse-expression tokens1 (get-precedence 'LOWEST))]
+                      (cond
+                        (= 'RPAREN (.Type (first left-tokens-after-parsing-expression))) (recur left-tokens-after-parsing-expression (conj arguments parsed-expression) left-tokens-after-parsing-expression)
+                        (= 'COMMA (.Type (first left-tokens-after-parsing-expression))) (recur left-tokens-after-parsing-expression (conj arguments parsed-expression) left-tokens-after-parsing-expression)
+                        :else (throw (Exception. "function call must end with a closing bracket"))))))))
+
 
 (defn parse-call-arguments [tokens]
   (println)
@@ -180,7 +185,7 @@
 
 (defn parse-call-expression [[first-token & rest-tokens] function-expression]
   (let [[tokens-left parsed-arguments] (parse-call-arguments rest-tokens)]
-        (CallExpression. (.Type first-token) function-expression parsed-arguments)))
+        [tokens-left (CallExpression. (.Type first-token) function-expression parsed-arguments)]))
 
 (def functions-associated-with-tokens {
                                        'IDENT parse-identifier
