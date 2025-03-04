@@ -273,21 +273,49 @@
       (not= (.Type return-token) 'RETURN) (throw (Exception. "first token of the return statement should be return"))
       :else [tokens-to-return (ReturnStatement. 'RETURN nil)])))
 
-(defn parse-let-statement
-  "This function will take the tokens and parse the LET statement
-  the structure of `let` statement looks Like
-  let <IDENTIFIER> = <EXPRESSION>
-
-  return : [<sequence of tokens to process> formed AST]
-  "
-  [tokens]
-  (let [lett-token (first tokens) identifier-token (second tokens)
-        assign-token (nth tokens 2) tokens tokens]
+(defn parse-return-statement [tokens]
+  (let [[return-token & rest-return-tokens] tokens]
     (cond
+      (not= 'RETURN (.Type return-token)) (throw (Exception. "first token of the return statement should be return"))
+      (nil? rest-return-tokens) (throw (Exception. "return statement must be followed by the expression"))
+      :else (let [[rest-tokens-after-parsing-expression parsed-expression] (parse-expression rest-return-tokens (get-precedence 'LOWEST))]
+              (cond
+                (= 'SEMICOLON (first rest-tokens-after-parsing-expression)) [(rest rest-tokens-after-parsing-expression) (ReturnStatement. 'RETURN parsed-expression)]
+                :else [rest-tokens-after-parsing-expression (ReturnStatement. 'RETURN parsed-expression)])))))
+
+;; (defn parse-let-statement
+;;   "This function will take the tokens and parse the LET statement
+;;   the structure of `let` statement looks Like
+;;   let <IDENTIFIER> = <EXPRESSION>
+
+;;   return : [<sequence of tokens to process> formed AST]
+;;   "
+;;   [tokens]
+;;   (let [lett-token (first tokens) identifier-token (second tokens)
+;;         assign-token (nth tokens 2) tokens tokens]
+;;     (cond
+;;       (not= (.Type identifier-token) 'IDENT) (throw (Exception. "after let statement there should be an identifier"))
+;;       (not= (.Type assign-token) 'ASSIGN) (throw (Exception. "after the let statement and identifier we should have = sign"))
+;;       :else (let [tokens-to-return (drop-till-semi-colon tokens)]
+;;               [tokens-to-return (LetStatement. 'LET (Identifier. (.Type identifier-token) (.Literal identifier-token)) nil)]))))
+
+(defn parse-let-statement
+  [tokens]
+  (let [[lett-token identifier-token assign-token & rest-tokens] tokens tokens-let tokens]
+    (cond
+      (nil? lett-token) (throw (Exception. "let statement must begin with let"))
+      (nil? identifier-token) (throw (Exception. "let statement must have the identifier"))
+      (nil? assign-token) (throw (Exception. "let statement must have assignment"))
+      (nil? rest-tokens) (throw (Exception. "after the assignment operator there should be some expression"))
+      (= 'SEMICOLON (first rest-tokens)) (throw (Exception. "after the assignment operator we should have some expression and not semicolon"))
       (not= (.Type identifier-token) 'IDENT) (throw (Exception. "after let statement there should be an identifier"))
       (not= (.Type assign-token) 'ASSIGN) (throw (Exception. "after the let statement and identifier we should have = sign"))
-      :else (let [tokens-to-return (drop-till-semi-colon tokens)]
-              [tokens-to-return (LetStatement. 'LET (Identifier. (.Type identifier-token) (.Literal identifier-token)) nil)]))))
+      :else (let [[rest-tokens-after-parsing-expression parsed-expression] (parse-expression rest-tokens (get-precedence 'LOWEST))]
+              (cond
+                (= 'SEMICOLON (first rest-tokens-after-parsing-expression)) [(rest rest-tokens-after-parsing-expression) (LetStatement. 'LET (Identifier. (.Type identifier-token) (.Literal identifier-token)) parsed-expression)]
+                :else [rest-tokens-after-parsing-expression (LetStatement. 'LET (Identifier. (.Type identifier-token) (.Literal identifier-token)) parsed-expression)])))))
+
+
 
 (defn parse-expression-statement
   [tokens]
