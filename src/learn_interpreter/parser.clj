@@ -240,8 +240,8 @@
   (println)
   (println "parse-expression tokens are " tokens)
   (let [[first & rest] tokens func (functions-associated-with-tokens (.Type first))]
-    ;; (println)
-    ;; (println " parsing expression first is " first " rest is " rest)
+    (println " parsing expression first is " first " rest is " rest)
+    (println " function got is " func)
     (cond
       (nil? func) (throw (Exception. "Cannot parse expression in parse-expression function"))
       :else (let [[left-tokens left-exp] (func tokens)]
@@ -260,27 +260,35 @@
 (defn drop-till-semi-colon [tokens]
   (next (drop-while #(not= (.Type %) 'SEMICOLON) tokens)))
 
-(defn parse-return-statement
-  "This function will parse the return statement
-  the structure of the `return` statement looks like This
-  return <EXPRESSION>
+;; (defn parse-return-statement
+;;   "This function will parse the return statement
+;;   the structure of the `return` statement looks like This
+;;   return <EXPRESSION>
 
-  return : [<sequence of tokens to process> formed AST]
-  "
-  [tokens]
-  (let [return-token (first tokens) tokens tokens tokens-to-return (drop-till-semi-colon tokens)]
-    (cond
-      (not= (.Type return-token) 'RETURN) (throw (Exception. "first token of the return statement should be return"))
-      :else [tokens-to-return (ReturnStatement. 'RETURN nil)])))
+;;   return : [<sequence of tokens to process> formed AST]
+;;   "
+;;   [tokens]
+;;   (let [return-token (first tokens) tokens tokens tokens-to-return (drop-till-semi-colon tokens)]
+;;     (cond
+;;       (not= (.Type return-token) 'RETURN) (throw (Exception. "first token of the return statement should be return"))
+;;       :else [tokens-to-return (ReturnStatement. 'RETURN nil)])))
 
 (defn parse-return-statement [tokens]
   (let [[return-token & rest-return-tokens] tokens]
+    (println)
+    (println " return-token is " return-token)
+    (println)
+    (println " rest-return-tokens are " rest-return-tokens)
+    (println)
     (cond
       (not= 'RETURN (.Type return-token)) (throw (Exception. "first token of the return statement should be return"))
       (nil? rest-return-tokens) (throw (Exception. "return statement must be followed by the expression"))
       :else (let [[rest-tokens-after-parsing-expression parsed-expression] (parse-expression rest-return-tokens (get-precedence 'LOWEST))]
+              (println)
+              (println " rest-tokens-after-parsing-expression " rest-tokens-after-parsing-expression)
+              (println)
               (cond
-                (= 'SEMICOLON (first rest-tokens-after-parsing-expression)) [(rest rest-tokens-after-parsing-expression) (ReturnStatement. 'RETURN parsed-expression)]
+                (= 'SEMICOLON (.Type (first rest-tokens-after-parsing-expression))) [(rest rest-tokens-after-parsing-expression) (ReturnStatement. 'RETURN parsed-expression)]
                 :else [rest-tokens-after-parsing-expression (ReturnStatement. 'RETURN parsed-expression)])))))
 
 ;; (defn parse-let-statement
@@ -312,7 +320,7 @@
       (not= (.Type assign-token) 'ASSIGN) (throw (Exception. "after the let statement and identifier we should have = sign"))
       :else (let [[rest-tokens-after-parsing-expression parsed-expression] (parse-expression rest-tokens (get-precedence 'LOWEST))]
               (cond
-                (= 'SEMICOLON (first rest-tokens-after-parsing-expression)) [(rest rest-tokens-after-parsing-expression) (LetStatement. 'LET (Identifier. (.Type identifier-token) (.Literal identifier-token)) parsed-expression)]
+                (= 'SEMICOLON (.Type (first rest-tokens-after-parsing-expression))) [(rest rest-tokens-after-parsing-expression) (LetStatement. 'LET (Identifier. (.Type identifier-token) (.Literal identifier-token)) parsed-expression)]
                 :else [rest-tokens-after-parsing-expression (LetStatement. 'LET (Identifier. (.Type identifier-token) (.Literal identifier-token)) parsed-expression)])))))
 
 
@@ -337,7 +345,12 @@
   ;; (println " parse statements is called ")
   (cond
     (= (.Type (first tokens)) 'LET) (parse-let-statement tokens)
-    (= (.Type (first tokens)) 'RETURN) (parse-return-statement tokens)
+    (= (.Type (first tokens)) 'RETURN) (let [[left-tokens parsed-statements] (parse-return-statement tokens)]
+                                         (println)
+                                         (println " left tokens after parsing the return statement " left-tokens)
+                                         (println " parsed-statements are " parsed-statements)
+                                         [left-tokens parsed-statements]
+                                         )
     :else (parse-expression-statement tokens)))
 
 (defn start
@@ -404,3 +417,9 @@
  
 ;; (start "add(1, 2*3, 4+5);")
 ;; (tokenizer/get-token "add(1, 2*3, 4+5);")
+;; (start "return (1+2);")
+;; (tokenizer/get-token "return 5;")
+;; (start "let x = 5;")
+;; (start "let y = true;")
+;; (start "let foobar = y;")
+
