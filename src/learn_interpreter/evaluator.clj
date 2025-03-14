@@ -48,6 +48,11 @@
       (nil? first-statement) result
       :else (recur rest-statements (my-eval first-statement)))))
 
+(defn evaluation [input]
+  (-> input
+      (parser/start)
+      (eval-statements)))
+
 
 ;; (eval-statements (parser/start "5;"))
 ;; (parser/start "5;")
