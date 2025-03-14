@@ -1,8 +1,15 @@
 (ns learn-interpreter.evaluator
-  (:require [learn-interpreter.parser :as parser])
-  (:import [learn_interpreter.ast LetStatement Identifier ReturnStatement
-             ExpressionStatement IntegerLiteral PrefixExpression InfixExpression BooleanExpression IfExpression BlockStatement FunctionLiteral CallExpression]
-   [learn_interpreter.object IntegerObj BooleanObj NullObj]))
+  (:require [learn-interpreter.parser :as parser]
+            [learn-interpreter.ast]
+            [learn-interpreter.object]))
+
+;;(:import [learn_interpreter.ast LetStatement Identifier ReturnStatement
+   ;;           ExpressionStatement IntegerLiteral PrefixExpression InfixExpression BooleanExpression IfExpression BlockStatement FunctionLiteral CallExpression]
+;; [learn_interpreter.object IntegerObj BooleanObj NullObj])
+
+(def constant-objects {'TRUE (learn-interpreter.object/->BooleanObj true)
+                       'FALSE (learn-interpreter.object/->BooleanObj false)
+                       'NULL (learn-interpreter.object/->NullObj)})
 
 (defn my-eval [ast-node]
   (println)
@@ -18,16 +25,18 @@
       (= (str learn_interpreter.ast.IntegerLiteral) (str ast-node-type)) (do
                                                                (println)
                                                                (println " got inside IntegerLiteral block")
-                                                               (IntegerObj. (.Value node)))
+                                                               (learn-interpreter.object/->IntegerObj (.Value node)))
       (= (str learn_interpreter.ast.BooleanExpression) (str ast-node-type)) (do
                                                                   (println)
                                                                   (println " got inside BooleanExpression block")
                                                                   (println "node is " node)
                                                                   (println " value is " (.Value node))
-                                                                  (BooleanObj. (.Value node)))
+                                                                  (get constant-objects (.Token node)))
       :else (do
               (println "inside the else block")
               nil))))
+
+(learn-interpreter.object/->BooleanObj true)
 
 (defn eval-statements
   "This function will receive the list of parsed Statements
@@ -42,6 +51,7 @@
 
 ;; (eval-statements (parser/start "5;"))
 ;; (parser/start "5;")
+;; (parser/start "true;")
 ;; (def a (parser/start "true;"))
 ;; (eval-statements a)
 ;; (eval-statements (parser/start "true;"))
